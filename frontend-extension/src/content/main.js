@@ -117,9 +117,13 @@ chrome.runtime.onMessage.addListener((message) => {
       // TODO task 5: trigger voice input after compose opens
       break
 
-    case 'NEXT_POST':
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }))
+    case 'NEXT_POST': {
+      const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
+      const center = window.innerHeight / 2
+      const nextPost = posts.find(post => post.getBoundingClientRect().top > center + 10)
+      if (nextPost) nextPost.scrollIntoView({ behavior: 'smooth', block: 'center' })
       break
+    }
 
     case 'READ_ALOUD': {
       const post = document.querySelector('[data-testid="tweetText"]')
