@@ -1,18 +1,10 @@
+
 let currentContext = 'feed' // 'feed' | 'composing'
 let activeTabId = null
 
 // ── MediaPipe injection ──────────────────────────────────────────────────────
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' &&
-      (tab.url?.includes('twitter.com') || tab.url?.includes('x.com'))) {
-    chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['mediapipe/hands.js', 'mediapipe/camera_utils.js'],
-      world: 'ISOLATED'
-    }).catch(err => console.log('[AshnCo SW] MediaPipe injection:', err.message))
-  }
-})
+// Removed — MediaPipe now runs in the side panel, not the content script
 
 // ── Side panel ───────────────────────────────────────────────────────────────
 
@@ -26,7 +18,7 @@ chrome.action.onClicked.addListener((tab) => {
 // handle messages from external pages (localhost test.html via externally_connectable)
 chrome.runtime.onMessageExternal.addListener((message) => {
   if (message.type === 'GESTURE') {
-    forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action })
+    forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action, context: currentContext })
     chrome.tabs.query({ url: ['https://twitter.com/*', 'https://x.com/*'] }, (tabs) => {
       if (tabs[0]) handleGesture(message.action, tabs[0].id)
     })
@@ -48,8 +40,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       break
 
     case 'TTS':
-      // TODO task 5: call Person 2's TTS endpoint with message.text
-      console.log('[AshnCo SW] TTS requested:', message.text)
+      sendToContent(tabId, { type: 'SPEAK', text: message.text })
       break
   }
 })
@@ -59,7 +50,6 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 function handleGesture(action, tabId) {
   switch (action) {
     case 'like':
-      // Context-dependent: like when browsing, post draft when composing
       if (currentContext === 'composing') {
         sendToContent(tabId, { type: 'POST_DRAFT' })
       } else {
@@ -68,9 +58,9 @@ function handleGesture(action, tabId) {
       break
 
     case 'post':
-      // Open compose and start voice input
       sendToContent(tabId, { type: 'OPEN_COMPOSE' })
-      // TODO task 5: trigger STT, then send FILL_COMPOSE back to content script
+      // TODO: get transcript from P2's STT, then:
+      // generateTweet(transcript).then(({ tweetText }) => postTweet(tweetText))
       break
 
     case 'next':
@@ -78,7 +68,6 @@ function handleGesture(action, tabId) {
       break
 
     case 'readAloud':
-      // Context-dependent: read post when browsing, read draft when composing
       sendToContent(tabId, { type: 'READ_ALOUD' })
       break
   }
@@ -92,7 +81,6 @@ function sendToContent(tabId, message) {
 }
 
 function forwardToSidePanel(message) {
-  // Broadcast to all extension pages (side panel listens for these)
   chrome.runtime.sendMessage(message).catch(() => {
     // Side panel may not be open — ignore
   })

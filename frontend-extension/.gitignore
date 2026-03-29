@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Credentials — never commit this
+src/utils/credentials.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

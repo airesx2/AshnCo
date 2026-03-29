@@ -131,6 +131,11 @@ chrome.runtime.onMessage.addListener((message) => {
       break
     }
 
+    case 'SPEAK':
+      speechSynthesis.cancel()
+      speechSynthesis.speak(new SpeechSynthesisUtterance(message.text))
+      break
+
     case 'FILL_COMPOSE':
       if (composeBox && message.text) {
         console.log('[AshnCo] Fill compose with', message.text)
