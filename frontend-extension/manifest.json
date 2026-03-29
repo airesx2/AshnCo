@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "AshnCo",
+  "version": "1.0.0",
+  "action": {},
+  "background": {
+    "service_worker": "src/background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": ["src/content/main.js"],
+      "matches": ["https://twitter.com/*", "https://x.com/*"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "storage",
+    "identity",
+    "microphone",
+    "camera"
+  ],
+  "host_permissions": [
+    "https://twitter.com/*",
+    "https://x.com/*"
+  ]
+}
