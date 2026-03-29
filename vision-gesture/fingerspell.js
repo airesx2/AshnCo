@@ -3,12 +3,14 @@
 // use $1 Unistroke recognizer to classify stroke into letter
 
 import {emitCommand} from './events.js'
+import { DollarRecognizer} from './dollar.js'
 
 let isDrawing = false
 let stroke = [] //array{x,y} points collection during drawing
 let pauseTimer = null //user pauses are detected (end of each letter)
 
 const PAUSE_MS = 1000 //1s no movement = letter is done 
+const recognizer = new DollarRecognizer()
 
 //call every frame with full MediaPipe results
 export function updateFingerspell(results){
@@ -53,14 +55,16 @@ function commitLetter(){
 }
 
 
-
 function stopDrawing() {
     isDrawing = false
 }
 
-
-//PLACEHOLDER,later plugin with $1 Unistroke
-function recognizeStroke(points) {
-  console.log('stroke captured, points:', points.length)
-  return null   // returns null until $1 is wired up
+// uses $1 to recognize shapes
+function recognizeStroke(points){
+    const result = recognizer.Recognize(points, false)
+    console.log('recognized: ', result.Name, 'score: ', result.Score)
+    if (result.Score > 0.6) { //confidence threshold
+        return result.Name //return letter 
+    }
+    return null
 }
