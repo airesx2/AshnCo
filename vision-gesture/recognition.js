@@ -23,29 +23,38 @@ export function onGestureDetected(results){
 
     emitCommand(gesture) //emit 
 
-    function fingerExtended(lm, tip, pip){
+}
+
+function fingerExtended(lm, tip, pip){
         return lm[tip].y < lm[pip].y //tip higher than screen than knuckle
     }
 
-    //classify gestures, tip pos vs knuckle pos
     function classify(lm){
         if (isThumbsUp(lm)) return 'like'
         if (isOpenPalm(lm)) return 'readAloud'
-        if (isPeaceSign(lm)) return 'next'
+        if (isPeaceSign(lm)) return 'post'
+        if (isSix(lm)) return 'next'
+
         return null
     }
 
     function isThumbsUp(lm){
         const thumbsUp = lm[4].y <lm[3].y && lm[4].y < lm[0].y
         const othersCurled = !fingerExtended(lm, 8, 6) && !fingerExtended(lm, 12, 10) && !fingerExtended(lm, 16, 14) && !fingerExtended(lm, 20, 18)
-        return thumbsUp & othersCurled
+        return thumbsUp && othersCurled
     }
 
     function isOpenPalm(lm){
-        return fingerExtended(lm, 8, 6) && fingerExtended(lm, 12, 10) && fingerExtended(lm, 16, 14) && fingerExtended(lm, 20, 10)
+        return fingerExtended(lm, 8, 6) && fingerExtended(lm, 12, 10) && fingerExtended(lm, 16, 14) && fingerExtended(lm, 20, 18)
     }
 
     function isPeaceSign(lm) {
         return fingerExtended(lm, 8, 6) && fingerExtended(lm, 12, 10) && !fingerExtended(lm, 16, 14) && !fingerExtended(lm, 20, 18)
     }
-}
+
+    function isSix(lm) {
+        const thumbOut = lm[4].y < lm[3].y
+        const pinkyOut = fingerExtended(lm, 20, 18)
+        const middleCurled = !fingerExtended(lm, 8, 6) && !fingerExtended(lm, 12, 10) && !fingerExtended(lm, 16, 14)
+        return thumbOut && pinkyOut && middleCurled
+    }
