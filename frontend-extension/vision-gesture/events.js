@@ -1,5 +1,5 @@
 // vision-gesture/events.js
-const EXTENSION_ID = 'ianokamihakgmnclhjhimnpfdnambccd'
+const EXTENSION_ID = 'ianokamihakgmnclhjhimnpfdnambccd' 
 
 export function emitCommand(action) {
   // always update local display

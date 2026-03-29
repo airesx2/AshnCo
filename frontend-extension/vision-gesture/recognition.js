@@ -35,10 +35,10 @@ function fingerExtended(lm, tip, pip){
     }
 
     function classify(lm){
-        if (isThumbsUp(lm)) return 'thumbsUp'   // like post or submit draft
-        if (isOpenPalm(lm)) return 'openPalm'   // read post aloud
-        if (isPeaceSign(lm)) return 'peace'      // open compose window
-        if (isSix(lm)) return 'shaka'            // next post
+        if (isThumbsUp(lm)) return 'like'       // like post or submit draft
+        if (isOpenPalm(lm)) return 'readAloud'  // read post aloud
+        if (isPeaceSign(lm)) return 'post'      // open compose window
+        if (isSix(lm)) return 'next'            // next post
 
         return null
     }

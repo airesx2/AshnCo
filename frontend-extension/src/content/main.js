@@ -90,12 +90,18 @@ function watchForComposeBox() {
 chrome.runtime.onMessage.addListener((message) => {
   switch (message.type) {
     case 'LIKE_POST': {
-      // try focused article first, fall back to first visible like button
-      const focused = document.querySelector('[data-testid="tweet"][tabindex="0"]')
-      const likeBtn = focused
-        ? focused.querySelector('[data-testid="like"]')
-        : document.querySelector('[data-testid="like"]')
-      if (likeBtn) likeBtn.click()
+      // find the post closest to the center of the viewport
+      const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
+      const center = window.innerHeight / 2
+      const closest = posts.reduce((best, post) => {
+        const rect = post.getBoundingClientRect()
+        const dist = Math.abs(rect.top + rect.height / 2 - center)
+        return !best || dist < best.dist ? { post, dist } : best
+      }, null)
+      if (closest) {
+        const likeBtn = closest.post.querySelector('[data-testid="like"]')
+        if (likeBtn) likeBtn.click()
+      }
       break
     }
 
