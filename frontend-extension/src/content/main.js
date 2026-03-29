@@ -1,33 +1,150 @@
 let lastUrl = location.href
+let composeBox = null
+let composeObserver = null
 
-// Runs once — camera and MediaPipe live here, survive SPA navigation
+// ── One-time init ────────────────────────────────────────────────────────────
+
 function onceInit() {
-  const video = document.createElement('video')
-  video.id = 'ashn-camera'
-  video.autoplay = true
-  video.playsInline = true
-  video.style.cssText = 'position:fixed;width:0;height:0;opacity:0;pointer-events:none;'
-  document.body.appendChild(video)
-
-  // P3: initialize MediaPipe here using the video element above
-  // P3: emit chrome.runtime.sendMessage({ type: 'GESTURE', action: 'like' | 'readAloud' | 'next' })
+  setupCamera()
 }
 
-// Runs on each page — overlay UI and compose box detection live here
+function setupCamera() {
+  const host = document.createElement('div')
+  host.id = 'ashn-camera-host'
+  document.body.appendChild(host)
+
+  const shadow = host.attachShadow({ mode: 'open' })
+  shadow.innerHTML = `
+    <style>
+      :host { all: initial; }
+      .wrap {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        z-index: 2147483647;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        width: 160px;
+        aspect-ratio: 4/3;
+        background: #111;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transform: scaleX(-1);
+      }
+    </style>
+    <div class="wrap">
+      <video id="ashn-camera" autoplay playsinline muted></video>
+    </div>
+  `
+
+  const video = shadow.getElementById('ashn-camera')
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => { video.srcObject = stream })
+    .catch(err => console.error('[AshnCo] Camera error:', err.name, '-', err.message))
+
+  // P3: initialize MediaPipe Hands here using the video element above
+  // P3: call chrome.runtime.sendMessage({ type: 'GESTURE', action: 'thumbsUp' | 'peace' | 'shaka' | 'openPalm' })
+}
+
+// ── Context tracking ─────────────────────────────────────────────────────────
+
+function setContext(context) {
+  chrome.runtime.sendMessage({ type: 'CONTEXT', context })
+}
+
+// ── Compose box detection ────────────────────────────────────────────────────
+
+function findComposeBox() {
+  return document.querySelector('[data-testid="tweetTextarea_0"] [contenteditable="true"]')
+}
+
+function composeBoxReady(el) {
+  composeBox = el
+  el.addEventListener('focus', () => setContext('composing'))
+  el.addEventListener('blur',  () => setContext('feed'))
+}
+
+function watchForComposeBox() {
+  const el = findComposeBox()
+  if (el) { composeBoxReady(el); return }
+
+  composeObserver = new MutationObserver(() => {
+    const el = findComposeBox()
+    if (el) {
+      composeObserver.disconnect()
+      composeObserver = null
+      composeBoxReady(el)
+    }
+  })
+  composeObserver.observe(document.body, { childList: true, subtree: true })
+}
+
+// ── Command listener ─────────────────────────────────────────────────────────
+
+chrome.runtime.onMessage.addListener((message) => {
+  switch (message.type) {
+    case 'LIKE_POST':
+      console.log('[AshnCo] Like post')
+      // TODO task 9: find focused post's like button and click it
+      break
+
+    case 'POST_DRAFT':
+      console.log('[AshnCo] Post draft')
+      // TODO task 9: find and click Twitter's post/submit button
+      break
+
+    case 'OPEN_COMPOSE':
+      window.location.href = 'https://twitter.com/compose/post'
+      // TODO task 5: trigger voice input after compose opens
+      break
+
+    case 'NEXT_POST':
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }))
+      break
+
+    case 'READ_ALOUD': {
+      const post = document.querySelector('[data-testid="tweetText"]')
+      if (post) chrome.runtime.sendMessage({ type: 'TTS', text: post.innerText })
+      break
+    }
+
+    case 'FILL_COMPOSE':
+      if (composeBox && message.text) {
+        console.log('[AshnCo] Fill compose with', message.text)
+        // TODO task 7: full React-compatible autofill
+      }
+      break
+  }
+})
+
+// ── Per-page init ────────────────────────────────────────────────────────────
+
 function pageInit() {
-  // TODO task 3: detect Twitter's compose box contenteditable
-  // TODO task 4: mount floating overlay UI
-  console.log('[AshnCo] Page init on', location.href)
+  if (composeObserver) {
+    composeObserver.disconnect()
+    composeObserver = null
+  }
+  composeBox = null
+  setContext('feed')
+  watchForComposeBox()
 }
 
-const observer = new MutationObserver(() => {
+// ── SPA navigation observer ──────────────────────────────────────────────────
+
+const navObserver = new MutationObserver(() => {
   if (location.href !== lastUrl) {
     lastUrl = location.href
     pageInit()
   }
 })
 
-observer.observe(document.body, { childList: true, subtree: true })
+navObserver.observe(document.body, { childList: true, subtree: true })
 
 onceInit()
 pageInit()
