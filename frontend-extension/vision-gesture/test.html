@@ -1,0 +1,44 @@
+
+//gesture test for html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gesture Test</title>
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; padding: 2rem; }
+    #status { font-size: 2rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h2>Gesture Test</h2>
+  <div id="status">Waiting for gesture...</div>
+
+  <!-- MediaPipe loaded from CDN, no install needed -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script type="module">
+    import { startCamera } from './camera.js'
+    import { onGestureDetected,getCurrentGesture } from './recognition.js'
+    import { updateFingerspell } from './fingerspell.js'
+
+
+    //listen for letters + gestures
+    document.addEventListener('gesture-command', e=> {
+      if (e.detail.action.startsWith('letter:')){
+        document.getElementById('status').textContent = 'Letter: ' + e.detail.action.split(":")[1]
+      }else {
+        document.getElementById('status').textContent = 'Fired: ' + e.detail.action
+      }
+    })
+
+    // Start camera, pass recognition as the frame handler
+    startCamera((results) =>{
+      onGestureDetected(results)
+      updateFingerspell(results)
+      const current = getCurrentGesture(results)
+      document.getElementById('status').textContent = current ? current : 'waiting for gesture...'
+    })
+  </script>
+</body>
+</html>

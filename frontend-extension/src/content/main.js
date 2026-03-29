@@ -1,3 +1,6 @@
+import { onGestureDetected } from '../../vision-gesture/recognition.js'
+
+
 let lastUrl = location.href
 let composeBox = null
 let composeObserver = null
@@ -45,11 +48,31 @@ function setupCamera() {
   const video = shadow.getElementById('ashn-camera')
 
   navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => { video.srcObject = stream })
-    .catch(err => console.error('[AshnCo] Camera error:', err.name, '-', err.message))
+    .then(stream => {
+      video.srcObject = stream
 
-  // P3: initialize MediaPipe Hands here using the video element above
-  // P3: call chrome.runtime.sendMessage({ type: 'GESTURE', action: 'thumbsUp' | 'peace' | 'shaka' | 'openPalm' })
+      const hands = new Hands({
+        locateFile: f => chrome.runtime.getURL(`src/content/mediapipe/${f}`)
+      })
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.5
+      })
+
+      hands.onResults(onGestureDetected)
+
+      const camera = new Camera(video, {
+        onFrame: async () => await hands.send({ image: video }),
+        width: 640,
+        height: 480
+      })
+
+      camera.start()
+    })
+    .catch(err => console.error('[AshnCo] Camera error:', err.name, '-', err.message))
 }
 
 // ── Context tracking ─────────────────────────────────────────────────────────
