@@ -19,8 +19,7 @@
 
   <script type="module">
     import { startCamera } from './camera.js'
-    import { onGestureDetected,getCurrentGesture } from './recognition.js'
-    import { updateFingerspell } from './fingerspell.js'
+    import { onGestureDetected, getCurrentGesture } from './recognition.js'
 
 
     //listen for letters + gestures
@@ -35,7 +34,6 @@
     // Start camera, pass recognition as the frame handler
     startCamera((results) =>{
       onGestureDetected(results)
-      updateFingerspell(results)
       const current = getCurrentGesture(results)
       document.getElementById('status').textContent = current ? current : 'waiting for gesture...'
     })

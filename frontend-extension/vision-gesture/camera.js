@@ -11,7 +11,7 @@ export async function startCamera(onFrame) {
   await video.play()
 
   const hands = new Hands({
-    locateFile: f => chrome.runtime.getURL(`src/content/mediapipe/${f}`)
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
 
   })
 

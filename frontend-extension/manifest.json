@@ -10,8 +10,6 @@
   "content_scripts": [
     {
       "js": [
-        "src/content/mediapipe/hands.js",
-        "src/content/mediapipe/camera_utils.js",
         "src/content/main.js"
       ],
       "matches": ["https://twitter.com/*", "https://x.com/*"],
@@ -24,18 +22,29 @@
   "permissions": [
     "sidePanel",
     "tabs",
+    "scripting",
     "storage",
-    "identity"
+    "identity",
+    "microphone",
+    "camera"
   ],
   "host_permissions": [
     "https://twitter.com/*",
     "https://x.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://cdn.jsdelivr.net"
+  },
+  "externally_connectable": {
+    "matches": ["http://localhost/*"]
+  },
+
   "web_accessible_resources": [
     {
-      "resources": ["src/content/mediapipe/*"],
+      "resources": ["mediapipe/*"],
       "matches": ["https://twitter.com/*", "https://x.com/*"]
     }
   ]
+  
 
 }

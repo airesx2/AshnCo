@@ -1,5 +1,3 @@
-import { onGestureDetected } from '../../vision-gesture/recognition.js'
-
 
 let lastUrl = location.href
 let composeBox = null
@@ -50,27 +48,6 @@ function setupCamera() {
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
       video.srcObject = stream
-
-      const hands = new Hands({
-        locateFile: f => chrome.runtime.getURL(`src/content/mediapipe/${f}`)
-      })
-
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.5
-      })
-
-      hands.onResults(onGestureDetected)
-
-      const camera = new Camera(video, {
-        onFrame: async () => await hands.send({ image: video }),
-        width: 640,
-        height: 480
-      })
-
-      camera.start()
     })
     .catch(err => console.error('[AshnCo] Camera error:', err.name, '-', err.message))
 }
@@ -112,15 +89,22 @@ function watchForComposeBox() {
 
 chrome.runtime.onMessage.addListener((message) => {
   switch (message.type) {
-    case 'LIKE_POST':
-      console.log('[AshnCo] Like post')
-      // TODO task 9: find focused post's like button and click it
+    case 'LIKE_POST': {
+      // try focused article first, fall back to first visible like button
+      const focused = document.querySelector('[data-testid="tweet"][tabindex="0"]')
+      const likeBtn = focused
+        ? focused.querySelector('[data-testid="like"]')
+        : document.querySelector('[data-testid="like"]')
+      if (likeBtn) likeBtn.click()
       break
+    }
 
-    case 'POST_DRAFT':
-      console.log('[AshnCo] Post draft')
-      // TODO task 9: find and click Twitter's post/submit button
+    case 'POST_DRAFT': {
+      const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
+                      document.querySelector('[data-testid="tweetButton"]')
+      if (postBtn) postBtn.click()
       break
+    }
 
     case 'OPEN_COMPOSE':
       window.location.href = 'https://twitter.com/compose/post'
@@ -169,5 +153,6 @@ const navObserver = new MutationObserver(() => {
 
 navObserver.observe(document.body, { childList: true, subtree: true })
 
+// camera starts immediately, gesture detection runs via test.html on localhost
 onceInit()
 pageInit()

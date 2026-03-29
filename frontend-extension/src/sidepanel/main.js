@@ -1,3 +1,5 @@
+import { onGestureDetected } from '../../vision-gesture/recognition.js'
+
 const gestureLabel = document.getElementById('gesture-label')
 const contextBadge = document.getElementById('context-badge')
 
@@ -37,3 +39,36 @@ chrome.runtime.onMessage.addListener((message) => {
     contextBadge.className   = `badge ${message.context}`
   }
 })
+
+const video = document.createElement('video')
+video.style.cssText = 'position:fixed;width:0;height:0;opacity:0;pointer-events:none;'
+document.body.appendChild(video)
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    video.srcObject = stream
+
+    const hands = new Hands({
+      locateFile: f => f.endsWith('.js')
+        ? `/mediapipe/${f}`
+        : `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+    })
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    })
+
+    hands.onResults(onGestureDetected)
+
+    const camera = new Camera(video, {
+      onFrame: async () => await hands.send({ image: video }),
+      width: 640,
+      height: 480
+    })
+
+    camera.start()
+  })
+  .catch(err => console.error('[AshnCo] Camera error:', err))

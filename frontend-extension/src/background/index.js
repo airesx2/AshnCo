@@ -1,6 +1,19 @@
 let currentContext = 'feed' // 'feed' | 'composing'
 let activeTabId = null
 
+// ── MediaPipe injection ──────────────────────────────────────────────────────
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' &&
+      (tab.url?.includes('twitter.com') || tab.url?.includes('x.com'))) {
+    chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['mediapipe/hands.js', 'mediapipe/camera_utils.js'],
+      world: 'ISOLATED'
+    }).catch(err => console.log('[AshnCo SW] MediaPipe injection:', err.message))
+  }
+})
+
 // ── Side panel ───────────────────────────────────────────────────────────────
 
 chrome.action.onClicked.addListener((tab) => {
@@ -9,6 +22,16 @@ chrome.action.onClicked.addListener((tab) => {
 })
 
 // ── Message router ───────────────────────────────────────────────────────────
+
+// handle messages from external pages (localhost test.html via externally_connectable)
+chrome.runtime.onMessageExternal.addListener((message) => {
+  if (message.type === 'GESTURE') {
+    forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action })
+    chrome.tabs.query({ url: ['https://twitter.com/*', 'https://x.com/*'] }, (tabs) => {
+      if (tabs[0]) handleGesture(message.action, tabs[0].id)
+    })
+  }
+})
 
 chrome.runtime.onMessage.addListener((message, sender) => {
   const tabId = sender.tab?.id ?? activeTabId

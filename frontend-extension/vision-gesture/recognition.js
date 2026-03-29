@@ -35,10 +35,10 @@ function fingerExtended(lm, tip, pip){
     }
 
     function classify(lm){
-        if (isThumbsUp(lm)) return 'like' //like current post or submit post (first ask "are you sure you want to post", thumbs a second time to post )
-        if (isOpenPalm(lm)) return 'readAloud' //read post again, stop/start reading
-        if (isPeaceSign(lm)) return 'post' //open post window
-        if (isSix(lm)) return 'next' //"scroll feature", next post 
+        if (isThumbsUp(lm)) return 'thumbsUp'   // like post or submit draft
+        if (isOpenPalm(lm)) return 'openPalm'   // read post aloud
+        if (isPeaceSign(lm)) return 'peace'      // open compose window
+        if (isSix(lm)) return 'shaka'            // next post
 
         return null
     }
