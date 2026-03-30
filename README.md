@@ -8,6 +8,7 @@ SETUP
 7. 'npx serve .'
 8. Open Twitter and https://vision-gesture.vercel.app in a split screen
 9. Click extension on Twitter
+10. MAKE SURE TO ALLOW PERMS FOR CAMERA AND MICROPHONE
 
 GESTURES KEY 
 - Thumbs up: like centered post / submit composed post
