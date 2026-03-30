@@ -2,7 +2,7 @@ const btn = document.getElementById('help-btn')
 const btnIcon = document.getElementById('btn-icon')
 
 const INSTRUCTIONS = [
-  'Welcome to AshnCo. Control Twitter hands-free using these gestures.',
+  'Welcome to HandsFree. Control Twitter hands-free using these gestures.',
   'Thumbs up: like the current post. On the compose page, thumbs up submits your draft — you will be asked to confirm.',
   'Peace sign: open the compose page. On the compose page, peace sign returns you to the feed.',
   'Shaka sign: scroll to the next post.',
