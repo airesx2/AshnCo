@@ -8,24 +8,12 @@
   </head>
   <body>
     <div id="app">
-      <header>
-        <h1>AshnCo</h1>
-        <span id="context-badge" class="badge feed">Feed</span>
-      </header>
-
-      <div id="status">
-        <div id="gesture-label" class="no-gesture">No gesture detected</div>
-      </div>
-
-      <section id="gesture-guide">
-        <div class="gesture-row"><span class="sign">👍</span><span class="desc">Like post &nbsp;·&nbsp; Post draft</span></div>
-        <div class="gesture-row"><span class="sign">✌️</span><span class="desc">Create post + voice</span></div>
-        <div class="gesture-row"><span class="sign">🤙</span><span class="desc">Next post</span></div>
-        <div class="gesture-row"><span class="sign">🖐</span><span class="desc">Read aloud</span></div>
-      </section>
+      <h1>AshnCo</h1>
+      <button id="help-btn">
+        <span id="btn-icon">🔊</span>
+        <span id="btn-label">How to use</span>
+      </button>
     </div>
-    <script src="/mediapipe/hands.js"></script>
-    <script src="/mediapipe/camera_utils.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
 </html>

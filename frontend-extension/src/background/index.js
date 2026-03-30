@@ -67,11 +67,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 function handleGesture(action, tabId, isComposing = false) {
   switch (action) {
     case 'like':
-<<<<<<< HEAD
       if (isComposing || currentContext === 'composing') {
-=======
-      if (currentContext === 'composing') {
->>>>>>> e5196becbd359dec1647a99abfa9a4faa0a6e0a2
         sendToContent(tabId, { type: 'POST_DRAFT' })
       } else {
         sendToContent(tabId, { type: 'LIKE_POST' })
@@ -79,17 +75,13 @@ function handleGesture(action, tabId, isComposing = false) {
       break
 
     case 'post':
-<<<<<<< HEAD
       if (isComposing) {
         sendToContent(tabId, { type: 'GOTO_FEED' })
       } else {
         sendToContent(tabId, { type: 'OPEN_COMPOSE' })
+        // TODO: get transcript from P2's STT, then:
+        // generateTweet(transcript).then(({ tweetText }) => postTweet(tweetText))
       }
-=======
-      sendToContent(tabId, { type: 'OPEN_COMPOSE' })
-      // TODO: get transcript from P2's STT, then:
-      // generateTweet(transcript).then(({ tweetText }) => postTweet(tweetText))
->>>>>>> e5196becbd359dec1647a99abfa9a4faa0a6e0a2
       break
 
     case 'next':
