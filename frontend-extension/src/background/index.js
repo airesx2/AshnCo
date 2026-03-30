@@ -1,18 +1,10 @@
+
 let currentContext = 'feed' // 'feed' | 'composing'
 let activeTabId = null
 
 // ── MediaPipe injection ──────────────────────────────────────────────────────
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' &&
-      (tab.url?.includes('twitter.com') || tab.url?.includes('x.com'))) {
-    chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['mediapipe/hands.js', 'mediapipe/camera_utils.js'],
-      world: 'ISOLATED'
-    }).catch(err => console.log('[AshnCo SW] MediaPipe injection:', err.message))
-  }
-})
+// Removed — MediaPipe now runs in the side panel, not the content script
 
 // ── Side panel ───────────────────────────────────────────────────────────────
 
@@ -26,7 +18,7 @@ chrome.action.onClicked.addListener((tab) => {
 // handle messages from external pages (localhost test.html via externally_connectable)
 chrome.runtime.onMessageExternal.addListener((message) => {
   if (message.type === 'GESTURE') {
-    forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action })
+    forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action, context: currentContext })
     chrome.tabs.query({ url: ['https://twitter.com/*', 'https://x.com/*'] }, (tabs) => {
       if (tabs[0]) {
         const isComposing = tabs[0].url?.includes('/compose')
@@ -51,8 +43,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       break
 
     case 'TTS':
-      // TODO task 5: call Person 2's TTS endpoint with message.text
-      console.log('[AshnCo SW] TTS requested:', message.text)
+      sendToContent(tabId, { type: 'SPEAK', text: message.text })
       break
 
     case 'SPEAK': {
@@ -76,7 +67,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 function handleGesture(action, tabId, isComposing = false) {
   switch (action) {
     case 'like':
+<<<<<<< HEAD
       if (isComposing || currentContext === 'composing') {
+=======
+      if (currentContext === 'composing') {
+>>>>>>> e5196becbd359dec1647a99abfa9a4faa0a6e0a2
         sendToContent(tabId, { type: 'POST_DRAFT' })
       } else {
         sendToContent(tabId, { type: 'LIKE_POST' })
@@ -84,11 +79,17 @@ function handleGesture(action, tabId, isComposing = false) {
       break
 
     case 'post':
+<<<<<<< HEAD
       if (isComposing) {
         sendToContent(tabId, { type: 'GOTO_FEED' })
       } else {
         sendToContent(tabId, { type: 'OPEN_COMPOSE' })
       }
+=======
+      sendToContent(tabId, { type: 'OPEN_COMPOSE' })
+      // TODO: get transcript from P2's STT, then:
+      // generateTweet(transcript).then(({ tweetText }) => postTweet(tweetText))
+>>>>>>> e5196becbd359dec1647a99abfa9a4faa0a6e0a2
       break
 
     case 'next':
@@ -96,7 +97,6 @@ function handleGesture(action, tabId, isComposing = false) {
       break
 
     case 'readAloud':
-      // Context-dependent: read post when browsing, read draft when composing
       sendToContent(tabId, { type: 'READ_ALOUD' })
       break
   }
@@ -110,7 +110,6 @@ function sendToContent(tabId, message) {
 }
 
 function forwardToSidePanel(message) {
-  // Broadcast to all extension pages (side panel listens for these)
   chrome.runtime.sendMessage(message).catch(() => {
     // Side panel may not be open — ignore
   })
