@@ -1,7 +1,14 @@
-- unpack dist in chrome extension developer mode
-- make sure to change extension id in events.js
-- npx serve . in vision-gesture
-- split screen x.com and local host
+SETUP
+1. Install npm and node
+2. 'npm run build'
+3. Go to chrome://extensions
+4. Turn on developer mode and click Load unpacked
+5. Select frontend-extension --> dist
+6. Select details, copy paste the ID, and paste into event-gesture --> events.js --> EXTENSION_ID
+7. 'npx serve .'
+8. Open Twitter and https://vision-gesture.vercel.app in a split screen
+9. Click extension on Twitter
+10. MAKE SURE TO ALLOW PERMS FOR CAMERA AND MICROPHONE
 
 GESTURES KEY 
 - Thumbs up: like centered post / submit composed post
