@@ -25,8 +25,7 @@
     "scripting",
     "storage",
     "identity",
-    "microphone",
-    "camera"
+    "tts"
   ],
   "host_permissions": [
     "https://twitter.com/*",

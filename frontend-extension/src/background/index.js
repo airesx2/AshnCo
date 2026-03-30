@@ -28,7 +28,10 @@ chrome.runtime.onMessageExternal.addListener((message) => {
   if (message.type === 'GESTURE') {
     forwardToSidePanel({ type: 'GESTURE_UPDATE', action: message.action })
     chrome.tabs.query({ url: ['https://twitter.com/*', 'https://x.com/*'] }, (tabs) => {
-      if (tabs[0]) handleGesture(message.action, tabs[0].id)
+      if (tabs[0]) {
+        const isComposing = tabs[0].url?.includes('/compose')
+        handleGesture(message.action, tabs[0].id, isComposing)
+      }
     })
   }
 })
@@ -51,16 +54,29 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       // TODO task 5: call Person 2's TTS endpoint with message.text
       console.log('[AshnCo SW] TTS requested:', message.text)
       break
+
+    case 'SPEAK': {
+      console.log('[AshnCo SW] Speaking:', message.text)
+      const replyTabId = sender.tab?.id
+      chrome.tts.speak(message.text, {
+        rate: 1.0,
+        onEvent: (event) => {
+          if (event.type === 'end' && replyTabId) {
+            chrome.tabs.sendMessage(replyTabId, { type: 'SPEAK_DONE' })
+          }
+        }
+      })
+      break
+    }
   }
 })
 
 // ── Gesture routing ──────────────────────────────────────────────────────────
 
-function handleGesture(action, tabId) {
+function handleGesture(action, tabId, isComposing = false) {
   switch (action) {
     case 'like':
-      // Context-dependent: like when browsing, post draft when composing
-      if (currentContext === 'composing') {
+      if (isComposing || currentContext === 'composing') {
         sendToContent(tabId, { type: 'POST_DRAFT' })
       } else {
         sendToContent(tabId, { type: 'LIKE_POST' })

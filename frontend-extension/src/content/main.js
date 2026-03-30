@@ -2,6 +2,13 @@
 let lastUrl = location.href
 let composeBox = null
 let composeObserver = null
+let postConfirmPending = false
+let postConfirmTimer = null
+let postSpeaking = false
+
+function speak(text) {
+  chrome.runtime.sendMessage({ type: 'SPEAK', text })
+}
 
 // ── One-time init ────────────────────────────────────────────────────────────
 
@@ -66,8 +73,9 @@ function findComposeBox() {
 
 function composeBoxReady(el) {
   composeBox = el
-  el.addEventListener('focus', () => setContext('composing'))
+  setContext('composing')
   el.addEventListener('blur',  () => setContext('feed'))
+  el.addEventListener('focus', () => setContext('composing'))
 }
 
 function watchForComposeBox() {
@@ -106,11 +114,25 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 
     case 'POST_DRAFT': {
-      const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
-                      document.querySelector('[data-testid="tweetButton"]')
-      if (postBtn) postBtn.click()
+      if (postSpeaking) break // ignore gestures while audio is playing
+      if (!postConfirmPending) {
+        postSpeaking = true
+        speak('thumbs up again to post')
+      } else {
+        clearTimeout(postConfirmTimer)
+        postConfirmPending = false
+        const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
+                        document.querySelector('[data-testid="tweetButton"]')
+        if (postBtn) postBtn.click()
+      }
       break
     }
+
+    case 'SPEAK_DONE':
+      postSpeaking = false
+      postConfirmPending = true
+      postConfirmTimer = setTimeout(() => { postConfirmPending = false }, 3000)
+      break
 
     case 'OPEN_COMPOSE':
       window.location.href = 'https://twitter.com/compose/post'
