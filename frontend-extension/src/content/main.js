@@ -14,6 +14,12 @@ function speak(text) {
   chrome.runtime.sendMessage({ type: 'SPEAK', text })
 }
 
+function clickPostButton() {
+  const btn = document.querySelector('[data-testid="tweetButtonInline"]') ||
+              document.querySelector('[data-testid="tweetButton"]')
+  if (btn) btn.click()
+}
+
 // ── Auto-read on scroll ─────────────────────────────────────────────────────
 
 function getVisiblePost() {
@@ -128,6 +134,24 @@ function composeBoxReady(el) {
   el.addEventListener('focus', () => setContext('composing'))
 }
 
+function startSTT() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SR) return
+  speak('listening')
+  const recognition = new SR()
+  recognition.continuous = false
+  recognition.interimResults = false
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript
+    if (composeBox) {
+      composeBox.focus()
+      document.execCommand('insertText', false, transcript)
+    }
+  }
+  recognition.onerror = () => speak('microphone not available')
+  recognition.start()
+}
+
 function watchForComposeBox() {
   const el = findComposeBox()
   if (el) { composeBoxReady(el); return }
@@ -152,10 +176,7 @@ chrome.runtime.onMessage.addListener((message) => {
       if (postConfirmPending) {
         clearTimeout(postConfirmTimer)
         postConfirmPending = false
-        const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
-                        document.querySelector('[data-testid="tweetButton"]') ||
-                        [...document.querySelectorAll('button[type="button"]')].find(b => b.textContent.trim() === 'Post')
-        if (postBtn) postBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+        clickPostButton()
         break
       }
       const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
@@ -182,9 +203,7 @@ chrome.runtime.onMessage.addListener((message) => {
       } else {
         clearTimeout(postConfirmTimer)
         postConfirmPending = false
-        const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
-                        document.querySelector('[data-testid="tweetButton"]')
-        if (postBtn) postBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+        clickPostButton()
       }
       break
     }
@@ -250,6 +269,9 @@ function pageInit() {
   composeBox = null
   setContext('feed')
   watchForComposeBox()
+  if (location.href.includes('/compose')) {
+    setTimeout(startSTT, 1500)
+  }
 }
 
 // ── SPA navigation observer ──────────────────────────────────────────────────
