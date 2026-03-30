@@ -1,5 +1,7 @@
 const btn = document.getElementById('help-btn')
 const btnIcon = document.getElementById('btn-icon')
+const autoReadBtn = document.getElementById('auto-read-btn')
+const autoReadLabel = document.getElementById('auto-read-label')
 
 const INSTRUCTIONS = [
   'Welcome to HandsFree. Control Twitter hands-free using these gestures.',
@@ -32,4 +34,20 @@ btn.addEventListener('click', () => {
   }
 
   speechSynthesis.speak(utt)
+})
+
+// Auto-read toggle
+autoReadBtn.addEventListener('click', () => {
+  autoReadBtn.classList.toggle('active')
+  const isEnabled = autoReadBtn.classList.contains('active')
+  autoReadLabel.textContent = isEnabled ? 'Auto-read: ON' : 'Auto-read: OFF'
+  
+  // Send message to all tabs to toggle auto-read
+  chrome.tabs.query({ url: ['https://twitter.com/*', 'https://x.com/*'] }, (tabs) => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_AUTO_READ', enabled: isEnabled }).catch(() => {
+        // Tab might not have content script ready, ignore error
+      })
+    })
+  })
 })

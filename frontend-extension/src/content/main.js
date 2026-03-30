@@ -5,9 +5,58 @@ let composeObserver = null
 let postConfirmPending = false
 let postConfirmTimer = null
 let postSpeaking = false
+let autoReadEnabled = true
+let lastReadPostId = null
+let scrollDebounceTimer = null
+let currentContext = 'feed'
 
 function speak(text) {
   chrome.runtime.sendMessage({ type: 'SPEAK', text })
+}
+
+// ── Auto-read on scroll ─────────────────────────────────────────────────────
+
+function getVisiblePost() {
+  if (currentContext === 'composing') return null
+  const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
+  const centerY = window.innerHeight / 2
+  let centerPost = null
+  let minDistance = Infinity
+  posts.forEach(post => {
+    const rect = post.getBoundingClientRect()
+    const postCenterY = rect.top + rect.height / 2
+    const distance = Math.abs(postCenterY - centerY)
+    if (rect.bottom > window.innerHeight * 0.2 && rect.top < window.innerHeight * 0.8) {
+      if (distance < minDistance) {
+        minDistance = distance
+        centerPost = post
+      }
+    }
+  })
+  return centerPost
+}
+
+function autoReadCurrentPost() {
+  if (!autoReadEnabled || postSpeaking) return
+  const post = getVisiblePost()
+  if (!post) return
+  const postId = post.getAttribute('data-testid') || post.textContent.substring(0, 50)
+  if (postId !== lastReadPostId) {
+    lastReadPostId = postId
+    const postText = post.querySelector('[data-testid="tweetText"]')
+    if (postText) {
+      chrome.runtime.sendMessage({ type: 'TTS', text: postText.innerText })
+    }
+  }
+}
+
+function setupAutoRead() {
+  window.addEventListener('scroll', () => {
+    clearTimeout(scrollDebounceTimer)
+    scrollDebounceTimer = setTimeout(() => {
+      autoReadCurrentPost()
+    }, 300)
+  }, { passive: true })
 }
 
 // ── One-time init ────────────────────────────────────────────────────────────
@@ -62,6 +111,7 @@ function setupCamera() {
 // ── Context tracking ─────────────────────────────────────────────────────────
 
 function setContext(context) {
+  currentContext = context
   chrome.runtime.sendMessage({ type: 'CONTEXT', context })
 }
 
@@ -98,7 +148,16 @@ function watchForComposeBox() {
 chrome.runtime.onMessage.addListener((message) => {
   switch (message.type) {
     case 'LIKE_POST': {
-      // find the post closest to the center of the viewport
+      // if waiting for post confirmation, treat this as the confirm
+      if (postConfirmPending) {
+        clearTimeout(postConfirmTimer)
+        postConfirmPending = false
+        const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
+                        document.querySelector('[data-testid="tweetButton"]') ||
+                        [...document.querySelectorAll('button[type="button"]')].find(b => b.textContent.trim() === 'Post')
+        if (postBtn) postBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+        break
+      }
       const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
       const center = window.innerHeight / 2
       const closest = posts.reduce((best, post) => {
@@ -114,16 +173,18 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 
     case 'POST_DRAFT': {
-      if (postSpeaking) break // ignore gestures while audio is playing
+      if (postSpeaking) break
       if (!postConfirmPending) {
         postSpeaking = true
+        // safety: reset if SPEAK_DONE never arrives
+        setTimeout(() => { postSpeaking = false }, 6000)
         speak('thumbs up again to post')
       } else {
         clearTimeout(postConfirmTimer)
         postConfirmPending = false
         const postBtn = document.querySelector('[data-testid="tweetButtonInline"]') ||
                         document.querySelector('[data-testid="tweetButton"]')
-        if (postBtn) postBtn.click()
+        if (postBtn) postBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
       }
       break
     }
@@ -171,6 +232,11 @@ chrome.runtime.onMessage.addListener((message) => {
         // TODO task 7: full React-compatible autofill
       }
       break
+
+    case 'TOGGLE_AUTO_READ':
+      autoReadEnabled = message.enabled
+      console.log('[AshnCo] Auto-read:', autoReadEnabled ? 'enabled' : 'disabled')
+      break
   }
 })
 
@@ -200,3 +266,4 @@ navObserver.observe(document.body, { childList: true, subtree: true })
 // camera starts immediately, gesture detection runs via test.html on localhost
 onceInit()
 pageInit()
+setupAutoRead()
