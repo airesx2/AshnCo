@@ -1,6 +1,7 @@
 
 let currentContext = 'feed' // 'feed' | 'composing'
 let activeTabId = null
+let ttsActive = false
 
 // ── MediaPipe injection ──────────────────────────────────────────────────────
 
@@ -43,7 +44,16 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       break
 
     case 'TTS':
-      sendToContent(tabId, { type: 'SPEAK', text: message.text })
+      if (ttsActive) {
+        chrome.tts.stop()
+        ttsActive = false
+      } else if (message.text) {
+        ttsActive = true
+        chrome.tts.speak(message.text, {
+          rate: 1.0,
+          onEvent: (e) => { if (e.type === 'end' || e.type === 'interrupted') ttsActive = false }
+        })
+      }
       break
 
     case 'SPEAK': {
@@ -67,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 function handleGesture(action, tabId, isComposing = false) {
   switch (action) {
     case 'like':
-      if (isComposing || currentContext === 'composing') {
+      if (isComposing) {
         sendToContent(tabId, { type: 'POST_DRAFT' })
       } else {
         sendToContent(tabId, { type: 'LIKE_POST' })

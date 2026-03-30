@@ -263,13 +263,20 @@ chrome.runtime.onMessage.addListener((message) => {
       const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
       const center = window.innerHeight / 2
       const nextPost = posts.find(post => post.getBoundingClientRect().top > center + 10)
-      if (nextPost) nextPost.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (nextPost) {
+        nextPost.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+          const postText = nextPost.querySelector('[data-testid="tweetText"]')
+          if (postText) chrome.runtime.sendMessage({ type: 'TTS', text: postText.innerText })
+        }, 800)
+      }
       break
     }
 
     case 'READ_ALOUD': {
-      const post = document.querySelector('[data-testid="tweetText"]')
-      if (post) chrome.runtime.sendMessage({ type: 'TTS', text: post.innerText })
+      const centerPost = getVisiblePost()
+      const postText = centerPost?.querySelector('[data-testid="tweetText"]')
+      if (postText) chrome.runtime.sendMessage({ type: 'TTS', text: postText.innerText })
       break
     }
 
@@ -300,10 +307,19 @@ function pageInit() {
     composeObserver = null
   }
   composeBox = null
+  postConfirmPending = false
+  postSpeaking = false
+  clearTimeout(postConfirmTimer)
   setContext('feed')
   watchForComposeBox()
   if (location.href.includes('/compose')) {
     setTimeout(startSTT, 1500)
+  } else {
+    setTimeout(() => {
+      const post = getVisiblePost()
+      const postText = post?.querySelector('[data-testid="tweetText"]')
+      if (postText) chrome.runtime.sendMessage({ type: 'TTS', text: postText.innerText })
+    }, 2500)
   }
 }
 
