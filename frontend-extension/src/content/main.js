@@ -222,6 +222,7 @@ chrome.runtime.onMessage.addListener((message) => {
       if (closest) {
         const likeBtn = closest.post.querySelector('[data-testid="like"]')
         if (likeBtn) likeBtn.click()
+        speak('liked post')
       }
       break
     }
