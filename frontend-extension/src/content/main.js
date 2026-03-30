@@ -22,6 +22,16 @@ function clickPostButton() {
 
 // ── Auto-read on scroll ─────────────────────────────────────────────────────
 
+function getPostKey(post) {
+  // Generate unique key from tweet text + author to identify each post uniquely
+  const tweetText = post.querySelector('[data-testid="tweetText"]')
+  if (!tweetText) return null
+  const text = tweetText.innerText.slice(0, 100)
+  const authorEl = post.querySelector('[data-testid="Tweet"] a[href*="/"]') || post.querySelector('a[href^="/"]')
+  const author = authorEl?.getAttribute('href')?.split('/')[1] || 'unknown'
+  return `${author}:${text.replace(/\n/g, ' ')}`
+}
+
 function getVisiblePost() {
   if (currentContext === 'composing') return null
   const posts = [...document.querySelectorAll('article[data-testid="tweet"]')]
@@ -46,11 +56,13 @@ function autoReadCurrentPost() {
   if (!autoReadEnabled || postSpeaking) return
   const post = getVisiblePost()
   if (!post) return
-  const postId = post.getAttribute('data-testid') || post.textContent.substring(0, 50)
+  const postId = getPostKey(post)
+  if (!postId) return
   if (postId !== lastReadPostId) {
     lastReadPostId = postId
     const postText = post.querySelector('[data-testid="tweetText"]')
     if (postText) {
+      console.log('[AshnCo] Auto-reading post from', postId.split(':')[0])
       chrome.runtime.sendMessage({ type: 'TTS', text: postText.innerText })
     }
   }
@@ -124,7 +136,8 @@ function setContext(context) {
 // ── Compose box detection ────────────────────────────────────────────────────
 
 function findComposeBox() {
-  return document.querySelector('[data-testid="tweetTextarea_0"] [contenteditable="true"]')
+  return document.querySelector('[data-testid="tweetTextarea_0"]') ||
+         document.querySelector('div[contenteditable="true"][role="textbox"]')
 }
 
 function composeBoxReady(el) {
@@ -134,21 +147,41 @@ function composeBoxReady(el) {
   el.addEventListener('focus', () => setContext('composing'))
 }
 
-function startSTT() {
+async function startSTT() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
   if (!SR) return
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach(t => t.stop())
+  } catch {
+    speak('microphone permission denied')
+    return
+  }
   speak('listening')
   const recognition = new SR()
   recognition.continuous = false
   recognition.interimResults = false
   recognition.onresult = (e) => {
     const transcript = e.results[0][0].transcript
-    if (composeBox) {
-      composeBox.focus()
+    console.log('[AshnCo] transcript:', transcript)
+    const box = composeBox ||
+                findComposeBox() ||
+                document.querySelector('div[contenteditable="true"][role="textbox"]') ||
+                document.querySelector('div[contenteditable="true"]')
+    console.log('[AshnCo] box:', box, 'composeBox var:', composeBox)
+    if (box) {
+      box.focus()
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(box)
+      range.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(range)
       document.execCommand('insertText', false, transcript)
     }
   }
-  recognition.onerror = () => speak('microphone not available')
+  recognition.onend = () => speak('done listening')
+  recognition.onerror = (e) => speak('microphone error')
   recognition.start()
 }
 
