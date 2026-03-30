@@ -134,8 +134,15 @@ chrome.runtime.onMessage.addListener((message) => {
       postConfirmTimer = setTimeout(() => { postConfirmPending = false }, 3000)
       break
 
+    case 'GOTO_FEED':
+      speak('redirecting to home page')
+      window.location.href = 'https://twitter.com/home'
+      break
+
     case 'OPEN_COMPOSE':
+      speak('redirecting to post compose page')
       window.location.href = 'https://twitter.com/compose/post'
+
       // TODO task 5: trigger voice input after compose opens
       break
 

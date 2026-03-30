@@ -84,9 +84,11 @@ function handleGesture(action, tabId, isComposing = false) {
       break
 
     case 'post':
-      // Open compose and start voice input
-      sendToContent(tabId, { type: 'OPEN_COMPOSE' })
-      // TODO task 5: trigger STT, then send FILL_COMPOSE back to content script
+      if (isComposing) {
+        sendToContent(tabId, { type: 'GOTO_FEED' })
+      } else {
+        sendToContent(tabId, { type: 'OPEN_COMPOSE' })
+      }
       break
 
     case 'next':
